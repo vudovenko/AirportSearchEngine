@@ -18,7 +18,7 @@ public class AirportSearchEngine {
         String airportName = getBeginningAirportName(scanner);
     }
 
-    private static String getBeginningAirportName(Scanner scanner) {
+    public static String getBeginningAirportName(Scanner scanner) {
         System.out.println("Введите начало имени аэропорта: ");
         return scanner.nextLine(); // todo добавить проверку на корректность имени
     }
