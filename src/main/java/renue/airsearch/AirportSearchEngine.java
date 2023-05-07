@@ -18,25 +18,23 @@ public class AirportSearchEngine {
         Collections.sort(names);
     }
 
-//    public static List<String> getDesiredAirports(List<String> names, String subname) {
-//        int startIndex = binarySearchFirstString(names, subname);
-//        int endIndex = binarySearchLastString(names, subname);
-//
-//        if (startIndex != -1 && endIndex != -1) {
-//            for (int i = startIndex; i <= endIndex; i++) {
-//                System.out.println(names.get(i));
-//            }
-//        } else {
-//            System.out.println("Подстрока не найдена");
-//        }
-//    }
+    public static List<String> getDesiredAirports(String subname) {
+        int startIndex = binarySearchFirstString(names, subname);
+        int endIndex = binarySearchLastString(names, subname);
+        List<String> airports = new ArrayList<>();
+
+        for (int i = startIndex; i <= endIndex; i++) {
+            airports.add(names.get(i));
+        }
+        return airports;
+    }
 
     public static void startRequestingAirportNames(Scanner scanner) {
         String airportName = getBeginningAirportName(scanner);
         while (!airportName.equals("!quit")) {
             long numberAirports = 0;
             long startTime = System.nanoTime();
-
+            getDesiredAirports(scanner.nextLine());
 
             long endTime = System.nanoTime();
             long milliseconds = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
