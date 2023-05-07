@@ -12,8 +12,15 @@ public class AirportSearchEngine {
     public static void main(String[] args) {
         namesAndBytes = new HashMap<>();
         names = new ArrayList<>();
+        Scanner scanner = new Scanner(System.in);
         getAirportNamesAndByteNumbers();
         Collections.sort(names);
+        String airportName = getBeginningAirportName(scanner);
+    }
+
+    private static String getBeginningAirportName(Scanner scanner) {
+        System.out.println("Введите начало имени аэропорта: ");
+        return scanner.nextLine(); // todo добавить проверку на корректность имени
     }
 
     public static void getAirportNamesAndByteNumbers() {
