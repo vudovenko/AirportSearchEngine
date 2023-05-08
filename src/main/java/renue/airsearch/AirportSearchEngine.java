@@ -1,5 +1,8 @@
 package renue.airsearch;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.*;
@@ -33,13 +36,14 @@ public class AirportSearchEngine {
         return airports;
     }
 
-    public static void getRequiredInformationAboutAirports(List<String> airportNames) {
+    public static void getRequiredInformationAboutAirports(List<String> airportNames, String filter) {
         for (String airName : airportNames) {
             Long airIndex = namesAndBytes.get(airName);
             try (RandomAccessFile randomAccessFile
                          = new RandomAccessFile("airports.csv", "r")) {
                 randomAccessFile.seek(airIndex);
                 String airportInformation = randomAccessFile.readLine();
+                boolean isFilterPassed = checkForComplianceWithFilter(getInformationFromLine(airportInformation), filter);
                 System.out.printf("\"%s\"[%s]\n", airName, airportInformation);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -47,7 +51,60 @@ public class AirportSearchEngine {
         }
     }
 
+    private static boolean checkForComplianceWithFilter(String[] informationFromLine, String filter1) {
+        // Создаем скриптовый движок
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("JavaScript");
+
+        // Данные для фильтрации в виде массива
+        String[] column = {
+                "1",
+                "Goroka Airport",
+                "Goroka",
+                "Papua New Guinea",
+                "GKA",
+                "AYGA",
+                "-6.081689834590001",
+                "145.391998291",
+                "5282",
+                "10",
+                "U",
+                "Pacific/Port_Moresby",
+                "airport",
+                "OurAirports"
+        };
+
+        // Фильтр для данных
+//        String filter = "column[0] == 1 && column[4] === 'GKA' || column[2] === 'Goroka' && (column[3] !== 'Papua New Guinea' || column[6] < 145)";
+        String filter = "column[0] == 1";
+
+        // Формируем код для выполнения в скриптовом движке
+        StringBuilder scriptCodeBuilder = new StringBuilder();
+        scriptCodeBuilder.append("var column = [");
+        for (String cell : column) {
+            scriptCodeBuilder.append("\"").append(cell).append("\",");
+        }
+        scriptCodeBuilder.deleteCharAt(scriptCodeBuilder.length() - 1);  // Удаляем последнюю запятую
+        scriptCodeBuilder.append("];");
+        scriptCodeBuilder.append("var result = (").append(filter).append(");");
+        scriptCodeBuilder.append("result;");
+
+        String scriptCode = scriptCodeBuilder.toString();
+
+        try {
+            // Выполняем скрипт
+            boolean result = (boolean) engine.eval(scriptCode);
+
+            System.out.println("Результат фильтрации: " + result);
+            return result;
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static void startRequestingAirportNames(Scanner scanner) {
+        String filter = getFilter(scanner);
         String airportName = getBeginningAirportName(scanner);
         while (!airportName.equals("!quit")) {
             long startTime = System.nanoTime();
@@ -57,13 +114,19 @@ public class AirportSearchEngine {
                 airportName = getBeginningAirportName(scanner);
                 continue;
             }
-            getRequiredInformationAboutAirports(desiredAirports);
+            getRequiredInformationAboutAirports(desiredAirports, filter);
             long endTime = System.nanoTime();
             long milliseconds = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
             System.out.println("Количество найденных строк: " + desiredAirports.size()
                     + "\nВремя, затраченное на поиск: " + milliseconds + " мс");
+            filter = getFilter(scanner);
             airportName = getBeginningAirportName(scanner);
         }
+    }
+
+    private static String getFilter(Scanner scanner) {
+        System.out.println("Введите фильтр для аэропорта: ");
+        return scanner.nextLine();
     }
 
     // Бинарный поиск самой первой строки, содержащей подстроку
@@ -130,7 +193,7 @@ public class AirportSearchEngine {
             String line;
             long index = randomAccessFile.getFilePointer();
             while ((line = randomAccessFile.readLine()) != null) {
-                String airName = getName(line);
+                String airName = getInformationFromLine(line)[1];
                 names.add(airName);
                 namesAndBytes.put(airName, index);
                 index = randomAccessFile.getFilePointer();
@@ -140,9 +203,8 @@ public class AirportSearchEngine {
         }
     }
 
-    public static String getName(String str) {
+    public static String[] getInformationFromLine(String str) {
         String newStr = str.replace("\"", "");
-        String[] strs = newStr.split(",");
-        return strs[1];
+        return newStr.split(",");
     }
 }
