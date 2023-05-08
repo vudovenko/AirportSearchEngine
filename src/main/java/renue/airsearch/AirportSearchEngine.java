@@ -37,7 +37,7 @@ public class AirportSearchEngine {
                          = new RandomAccessFile("airports.csv", "r")) {
                 randomAccessFile.seek(airIndex);
                 String airportInformation = randomAccessFile.readLine();
-                System.out.println(airportInformation);
+                System.out.println(airportInformation); // todo оформить правильный вывод инфы
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -48,12 +48,13 @@ public class AirportSearchEngine {
         String airportName = getBeginningAirportName(scanner);
         while (!airportName.equals("!quit")) {
             long startTime = System.nanoTime();
-            List<String> desiredAirports = getDesiredAirports(scanner.nextLine());
+            List<String> desiredAirports = getDesiredAirports(airportName);
             getRequiredInformationAboutAirports(desiredAirports);
             long endTime = System.nanoTime();
             long milliseconds = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
             System.out.println("Количество найденных строк: " + desiredAirports.size()
                     + "\nВремя, затраченное на поиск: " + milliseconds + " мс");
+            airportName = getBeginningAirportName(scanner);
         }
     }
 
@@ -110,7 +111,7 @@ public class AirportSearchEngine {
         return scanner.nextLine(); // todo добавить проверку на корректность имени
     }
 
-    public static void getAirportNamesAndByteNumbers() {
+    public static void getAirportNamesAndByteNumbers() { //todo проверить, почему имен больше, чем смещений в байтах
         try (RandomAccessFile randomAccessFile
                      = new RandomAccessFile("airports.csv", "r")) {
             String line;
