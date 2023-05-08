@@ -19,32 +19,27 @@ public class AirportSearchEngine {
         startRequestingAirportNames(scanner);
     }
 
-    public static List<String> getDesiredAirports(String subname) {
-        int startIndex = binarySearchFirstString(names, subname);
-        int endIndex = binarySearchLastString(names, subname);
-        List<String> airports = new ArrayList<>();
-
-        for (int i = startIndex; i <= endIndex; i++) {
-            if (i == -1) {
-                continue;
+    public static void getAirportNamesAndByteNumbers() {
+        try (RandomAccessFile randomAccessFile
+                     = new RandomAccessFile("airports.csv", "r")) {
+            String line;
+            long index = randomAccessFile.getFilePointer();
+            while ((line = randomAccessFile.readLine()) != null) {
+                String airName = getName(line);
+                names.add(airName);
+                namesAndBytes.put(airName, index);
+                index = randomAccessFile.getFilePointer();
             }
-            airports.add(names.get(i));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return airports;
     }
 
-    public static void getRequiredInformationAboutAirports(List<String> airportNames) {
-        for (String airName : airportNames) {
-            Long airIndex = namesAndBytes.get(airName);
-            try (RandomAccessFile randomAccessFile
-                         = new RandomAccessFile("airports.csv", "r")) {
-                randomAccessFile.seek(airIndex);
-                String airportInformation = randomAccessFile.readLine();
-                System.out.printf("\"%s\"[%s]\n", airName, airportInformation);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    public static String getName(String str) {
+        String newStr = str.replace("\"", "");
+        String[] strs = newStr.split(",");
+
+        return strs[1];
     }
 
     public static void startRequestingAirportNames(Scanner scanner) {
@@ -63,6 +58,46 @@ public class AirportSearchEngine {
             System.out.println("Количество найденных строк: " + desiredAirports.size()
                     + "\nВремя, затраченное на поиск: " + milliseconds + " мс");
             airportName = getBeginningAirportName(scanner);
+        }
+    }
+
+    public static String getBeginningAirportName(Scanner scanner) {
+        System.out.println("Введите начало имени аэропорта: ");
+        String airName = scanner.nextLine();
+        if (airName.equals("")) {
+            System.out.println("Вы ввели пустую строку - введите название аэропорта");
+            airName = getBeginningAirportName(scanner);
+        }
+
+        return airName;
+    }
+
+    public static List<String> getDesiredAirports(String subname) {
+        int startIndex = binarySearchFirstString(names, subname);
+        int endIndex = binarySearchLastString(names, subname);
+        List<String> airports = new ArrayList<>();
+
+        for (int i = startIndex; i <= endIndex; i++) {
+            if (i == -1) {
+                continue;
+            }
+            airports.add(names.get(i));
+        }
+
+        return airports;
+    }
+
+    public static void getRequiredInformationAboutAirports(List<String> airportNames) {
+        for (String airName : airportNames) {
+            Long airIndex = namesAndBytes.get(airName);
+            try (RandomAccessFile randomAccessFile
+                         = new RandomAccessFile("airports.csv", "r")) {
+                randomAccessFile.seek(airIndex);
+                String airportInformation = randomAccessFile.readLine();
+                System.out.printf("\"%s\"[%s]\n", airName, airportInformation);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -112,37 +147,5 @@ public class AirportSearchEngine {
         }
 
         return result;
-    }
-
-    public static String getBeginningAirportName(Scanner scanner) {
-        System.out.println("Введите начало имени аэропорта: ");
-        String airName = scanner.nextLine();
-        if (airName.equals("")) {
-            System.out.println("Вы ввели пустую строку - введите название аэропорта");
-            airName = getBeginningAirportName(scanner);
-        }
-        return airName;
-    }
-
-    public static void getAirportNamesAndByteNumbers() {
-        try (RandomAccessFile randomAccessFile
-                     = new RandomAccessFile("airports.csv", "r")) {
-            String line;
-            long index = randomAccessFile.getFilePointer();
-            while ((line = randomAccessFile.readLine()) != null) {
-                String airName = getName(line);
-                names.add(airName);
-                namesAndBytes.put(airName, index);
-                index = randomAccessFile.getFilePointer();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static String getName(String str) {
-        String newStr = str.replace("\"", "");
-        String[] strs = newStr.split(",");
-        return strs[1];
     }
 }
