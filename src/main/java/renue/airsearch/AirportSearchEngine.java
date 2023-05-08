@@ -36,7 +36,8 @@ public class AirportSearchEngine {
         return airports;
     }
 
-    public static void getRequiredInformationAboutAirports(List<String> airportNames, String filter) {
+    public static int getRequiredInformationAboutAirports(List<String> airportNames, String filter) {
+        int counter = 0;
         for (String airName : airportNames) {
             Long airIndex = namesAndBytes.get(airName);
             try (RandomAccessFile randomAccessFile
@@ -44,63 +45,68 @@ public class AirportSearchEngine {
                 randomAccessFile.seek(airIndex);
                 String airportInformation = randomAccessFile.readLine();
                 boolean isFilterPassed = checkForComplianceWithFilter(getInformationFromLine(airportInformation), filter);
-                System.out.printf("\"%s\"[%s]\n", airName, airportInformation);
+                if (isFilterPassed) {
+                    counter++;
+                    System.out.printf("\"%s\"[%s]\n", airName, airportInformation);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+        return counter;
     }
 
-    private static boolean checkForComplianceWithFilter(String[] informationFromLine, String filter1) {
+    private static boolean checkForComplianceWithFilter(String[] informationFromLine, String filter) {
+        if (filter.equals("")) {
+            return true;
+        }
         // Создаем скриптовый движок
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("JavaScript");
 
-        // Данные для фильтрации в виде массива
-        String[] column = {
-                "1",
-                "Goroka Airport",
-                "Goroka",
-                "Papua New Guinea",
-                "GKA",
-                "AYGA",
-                "-6.081689834590001",
-                "145.391998291",
-                "5282",
-                "10",
-                "U",
-                "Pacific/Port_Moresby",
-                "airport",
-                "OurAirports"
-        };
+        filter = prepareFilterForUse(filter);
+        String scriptCode = formingCodeToExecuteInScriptEngine(informationFromLine, filter);
 
-        // Фильтр для данных
-//        String filter = "column[0] == 1 && column[4] === 'GKA' || column[2] === 'Goroka' && (column[3] !== 'Papua New Guinea' || column[6] < 145)";
-        String filter = "column[0] == 1";
+        try {
+            // Выполняем скрипт
+            return (boolean) engine.eval(scriptCode);
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-        // Формируем код для выполнения в скриптовом движке
+    private static String formingCodeToExecuteInScriptEngine(String[] informationFromLine, String filter) {
         StringBuilder scriptCodeBuilder = new StringBuilder();
         scriptCodeBuilder.append("var column = [");
-        for (String cell : column) {
-            scriptCodeBuilder.append("\"").append(cell).append("\",");
+        for (String info : informationFromLine) {
+            scriptCodeBuilder.append("\"").append(info).append("\",");
         }
         scriptCodeBuilder.deleteCharAt(scriptCodeBuilder.length() - 1);  // Удаляем последнюю запятую
         scriptCodeBuilder.append("];");
         scriptCodeBuilder.append("var result = (").append(filter).append(");");
         scriptCodeBuilder.append("result;");
+        return scriptCodeBuilder.toString();
+    }
 
-        String scriptCode = scriptCodeBuilder.toString();
-
-        try {
-            // Выполняем скрипт
-            boolean result = (boolean) engine.eval(scriptCode);
-
-            System.out.println("Результат фильтрации: " + result);
-            return result;
-        } catch (ScriptException e) {
-            e.printStackTrace();
+    private static String prepareFilterForUse(String filter) {
+        filter = filter
+                .replace("=", "==")
+                .replace("<>", "!==")
+                .replace("&", "&&");
+        // Уменьшаем индексы внутри квадратных скобок на 1
+        StringBuilder updatedFilterBuilder = new StringBuilder();
+        String[] filterParts = filter.split("\\[");
+        for (String part : filterParts) {
+            if (part.contains("]")) {
+                String indexStr = part.substring(0, part.indexOf("]"));
+                int index = Integer.parseInt(indexStr);
+                index--;
+                part = "[" + index + part.substring(part.indexOf("]"));
+            }
+            updatedFilterBuilder.append(part);
         }
-        return false;
+        return updatedFilterBuilder.toString();
     }
 
     public static void startRequestingAirportNames(Scanner scanner) {
@@ -114,10 +120,10 @@ public class AirportSearchEngine {
                 airportName = getBeginningAirportName(scanner);
                 continue;
             }
-            getRequiredInformationAboutAirports(desiredAirports, filter);
+            int numberAirports = getRequiredInformationAboutAirports(desiredAirports, filter);
             long endTime = System.nanoTime();
             long milliseconds = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
-            System.out.println("Количество найденных строк: " + desiredAirports.size()
+            System.out.println("Количество найденных строк: " + numberAirports
                     + "\nВремя, затраченное на поиск: " + milliseconds + " мс");
             filter = getFilter(scanner);
             airportName = getBeginningAirportName(scanner);
