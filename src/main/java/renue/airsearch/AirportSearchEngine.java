@@ -25,6 +25,9 @@ public class AirportSearchEngine {
         List<String> airports = new ArrayList<>();
 
         for (int i = startIndex; i <= endIndex; i++) {
+            if (i == -1) {
+                continue;
+            }
             airports.add(names.get(i));
         }
         return airports;
@@ -37,7 +40,7 @@ public class AirportSearchEngine {
                          = new RandomAccessFile("airports.csv", "r")) {
                 randomAccessFile.seek(airIndex);
                 String airportInformation = randomAccessFile.readLine();
-                System.out.println(airportInformation); // todo оформить правильный вывод инфы
+                System.out.printf("\"%s\"[%s]\n", airName, airportInformation);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -49,6 +52,11 @@ public class AirportSearchEngine {
         while (!airportName.equals("!quit")) {
             long startTime = System.nanoTime();
             List<String> desiredAirports = getDesiredAirports(airportName);
+            if (desiredAirports.size() == 0) {
+                System.out.println("Искомые аэропорты не найдены!");
+                airportName = getBeginningAirportName(scanner);
+                continue;
+            }
             getRequiredInformationAboutAirports(desiredAirports);
             long endTime = System.nanoTime();
             long milliseconds = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
@@ -108,10 +116,15 @@ public class AirportSearchEngine {
 
     public static String getBeginningAirportName(Scanner scanner) {
         System.out.println("Введите начало имени аэропорта: ");
-        return scanner.nextLine(); // todo добавить проверку на корректность имени
+        String airName = scanner.nextLine();
+        if (airName.equals("")) {
+            System.out.println("Вы ввели пустую строку - введите название аэропорта");
+            airName = getBeginningAirportName(scanner);
+        }
+        return airName;
     }
 
-    public static void getAirportNamesAndByteNumbers() { //todo проверить, почему имен больше, чем смещений в байтах
+    public static void getAirportNamesAndByteNumbers() {
         try (RandomAccessFile randomAccessFile
                      = new RandomAccessFile("airports.csv", "r")) {
             String line;
