@@ -16,6 +16,7 @@ public class AirportSearchEngine {
         Scanner scanner = new Scanner(System.in);
         getAirportNamesAndByteNumbers();
         Collections.sort(names);
+        startRequestingAirportNames(scanner);
     }
 
     public static List<String> getDesiredAirports(String subname) {
@@ -29,15 +30,30 @@ public class AirportSearchEngine {
         return airports;
     }
 
+    public static void getRequiredInformationAboutAirports(List<String> airportNames) {
+        for (String airName : airportNames) {
+            Long airIndex = namesAndBytes.get(airName);
+            try (RandomAccessFile randomAccessFile
+                         = new RandomAccessFile("airports.csv", "r")) {
+                randomAccessFile.seek(airIndex);
+                String airportInformation = randomAccessFile.readLine();
+                System.out.println(airportInformation);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public static void startRequestingAirportNames(Scanner scanner) {
         String airportName = getBeginningAirportName(scanner);
         while (!airportName.equals("!quit")) {
-            long numberAirports = 0;
             long startTime = System.nanoTime();
-            getDesiredAirports(scanner.nextLine());
-
+            List<String> desiredAirports = getDesiredAirports(scanner.nextLine());
+            getRequiredInformationAboutAirports(desiredAirports);
             long endTime = System.nanoTime();
             long milliseconds = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+            System.out.println("Количество найденных строк: " + desiredAirports.size()
+                    + "\nВремя, затраченное на поиск: " + milliseconds + " мс");
         }
     }
 
